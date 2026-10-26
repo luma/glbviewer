@@ -1,0 +1,28 @@
+[package]
+name = "glbviewer"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "A minimal desktop viewer for glTF 2.0 (.glb/.gltf) models"
+license-file = "LICENSE"
+
+[dependencies]
+# Only the 3D stack: no audio, UI or 2D. `jpeg` is not on by default but is
+# needed for the many glTF files with JPEG textures.
+bevy = { version = "0.20", default-features = false, features = ["3d", "jpeg"] }
+
+# Bevy is unusably slow unoptimised; optimise dependencies (but not this crate,
+# to keep incremental builds fast) in dev builds too.
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+# Release builds as recommended by Bevy: optimise across the whole crate graph
+# for a faster, smaller binary at the cost of longer build times.
+[profile.release]
+opt-level = 3
+codegen-units = 1
+lto = "thin"
+strip = "debuginfo"
