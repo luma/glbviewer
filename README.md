@@ -4,7 +4,7 @@ A minimal desktop viewer for glTF 2.0 models (`.glb` and `.gltf`), built with
 [Bevy](https://bevyengine.org/) 0.20.
 
 The model is centred and framed automatically, lit by a single shadow-casting
-"sun", and can be rotated with the mouse.
+"sun", and can be rotated and zoomed with the mouse.
 
 **Note:** This was hacked together for my own personal use and I've only tested it on my local Linux machine. That being said, if you have feature requests or hit issues open an issue :-)
 
@@ -21,10 +21,12 @@ to the model's own directory.
 
 ### Controls
 
-| Input              | Action                                  |
-| ------------------ | --------------------------------------- |
-| Left-drag left/right | Spin the model around the vertical axis |
-| Left-drag up/down    | Tilt the model towards/away from you    |
+| Input                              | Action                                  |
+| ---------------------------------- | --------------------------------------- |
+| Left-drag left/right               | Spin the model around the vertical axis |
+| Left-drag up/down                  | Tilt the model towards/away from you    |
+| Scroll wheel / two-finger scroll   | Zoom in and out                         |
+| Backspace                          | Reset the zoom                          |
 
 Only the first scene in the file (`Scene0`) is shown.
 
