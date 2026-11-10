@@ -5,8 +5,9 @@ mod cli;
 mod controls;
 mod lighting;
 mod model;
+mod texture_ext;
 
-use bevy::prelude::*;
+use bevy::{asset::io::AssetSourceId, prelude::*};
 
 fn main() -> AppExit {
     let model = match cli::parse(std::env::args_os().skip(1)) {
@@ -18,6 +19,12 @@ fn main() -> AppExit {
     };
 
     App::new()
+        // Must come before `AssetPlugin` (in `DefaultPlugins`) to replace its
+        // default file reader.
+        .register_asset_source(
+            AssetSourceId::Default,
+            texture_ext::asset_source(model.dir.clone()),
+        )
         .add_plugins(
             DefaultPlugins
                 .set(AssetPlugin {

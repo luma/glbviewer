@@ -7,9 +7,12 @@ description = "A minimal desktop viewer for glTF 2.0 (.glb/.gltf) models"
 license-file = "LICENSE"
 
 [dependencies]
+base64 = "0.23"
 # Only the 3D stack: no audio, UI or 2D. `jpeg` is not on by default but is
 # needed for the many glTF files with JPEG textures.
-bevy = { version = "0.20", default-features = false, features = ["3d", "jpeg"] }
+bevy = { version = "0.20", default-features = false, features = ["3d", "jpeg", "webp", "basis-universal"] }
+percent-encoding = "2"
+serde_json = "1.0.154"
 
 # Bevy is unusably slow unoptimised; optimise dependencies (but not this crate,
 # to keep incremental builds fast) in dev builds too.

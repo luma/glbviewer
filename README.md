@@ -30,12 +30,20 @@ to the model's own directory.
 
 Only the first scene in the file (`Scene0`) is shown.
 
+### Textures
+
+Textures can be PNG, JPEG, WebP (`EXT_texture_webp`) or KTX2, including
+Basis Universal (`KHR_texture_basisu`). Basis textures must use UASTC: ETC1S
+ones can't be decoded, so if a texture has no PNG/JPEG fallback it is left off
+the model, with a warning in the log.
+
 ## Building
 
 You need a recent stable Rust toolchain (edition 2024, Rust 1.85+), installed
 via [rustup](https://rustup.rs/).
 
-On Linux, Bevy also needs a few system libraries. On Debian/Ubuntu:
+On Linux, Bevy also needs a few system libraries (and `g++`, which also builds
+the Basis Universal decoder). On Debian/Ubuntu:
 
 ```sh
 sudo apt install g++ pkg-config libx11-dev libasound2-dev libudev-dev \
