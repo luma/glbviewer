@@ -15,6 +15,7 @@ glbviewer path/to/model.glb
 glbviewer path/to/model.gltf
 glbviewer --output render.png path/to/model.glb
 glbviewer --output render.png --size 1600x900 path/to/model.gltf
+glbviewer --output cube.png examples/cube.gltf
 ```
 
 The app takes exactly one model path. `--output <file.png>` saves one render
@@ -23,6 +24,10 @@ defaults to `1920x1080`. Saved renders have a transparent background. Existing
 output files are not overwritten. Options can appear before or after the model
 path. A `.gltf` file can reference external `.bin` buffers and textures; these
 are resolved relative to the model's own directory.
+
+`examples/cube.gltf` is a self-contained example model. The headless render
+integration test requires a working graphics adapter and can be run with
+`cargo test --test headless_render -- --ignored`.
 
 ### Controls
 

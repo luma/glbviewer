@@ -13,6 +13,8 @@ use bevy::{
 
 use crate::{camera::CaptureTarget, cli::CliOptions, model::ModelBounds};
 
+const PIPELINE_WARMUP_FRAMES: u16 = 60;
+
 pub struct CapturePlugin;
 
 impl Plugin for CapturePlugin {
@@ -26,21 +28,23 @@ fn request_capture(
     options: Res<CliOptions>,
     target: Option<Res<CaptureTarget>>,
     bounds: Option<Res<ModelBounds>>,
-    mut rendered_frames: Local<u8>,
+    mut capture_state: Local<CaptureState>,
 ) {
     if options.output.is_none() || target.is_none() || bounds.is_none() {
         return;
     }
 
-    if *rendered_frames == u8::MAX {
+    if capture_state.requested {
         return;
     }
-    // Let scene assets and render pipelines settle before requesting the still.
-    *rendered_frames += 1;
-    if *rendered_frames < 3 {
+    // Let asynchronously loaded materials and render pipelines settle before
+    // requesting the still. The first frame with model bounds may only clear
+    // the target while the relevant pipelines are still compiling.
+    capture_state.frames += 1;
+    if capture_state.frames < PIPELINE_WARMUP_FRAMES {
         return;
     }
-    *rendered_frames = u8::MAX;
+    capture_state.requested = true;
 
     let path = options.output.clone().expect("checked above");
     commands
@@ -60,6 +64,12 @@ fn request_capture(
                 }
             },
         );
+}
+
+#[derive(Default)]
+struct CaptureState {
+    frames: u16,
+    requested: bool,
 }
 
 fn save_png(image: &Image, path: &Path) -> Result<(), Box<dyn std::error::Error>> {
