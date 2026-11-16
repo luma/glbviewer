@@ -13,11 +13,16 @@ The model is centred and framed automatically, lit by a single shadow-casting
 ```sh
 glbviewer path/to/model.glb
 glbviewer path/to/model.gltf
+glbviewer --output render.png path/to/model.glb
+glbviewer --output render.png --size 1600x900 path/to/model.gltf
 ```
 
-The app takes exactly one argument: the path to the model file. A `.gltf` file
-can reference external `.bin` buffers and textures; these are resolved relative
-to the model's own directory.
+The app takes exactly one model path. `--output <file.png>` saves one render
+without opening a window; `--size <WIDTHxHEIGHT>` sets its dimensions and
+defaults to `1920x1080`. Saved renders have a transparent background. Existing
+output files are not overwritten. Options can appear before or after the model
+path. A `.gltf` file can reference external `.bin` buffers and textures; these
+are resolved relative to the model's own directory.
 
 ### Controls
 

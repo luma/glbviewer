@@ -3,9 +3,14 @@
 
 use std::f32::consts::FRAC_PI_4;
 
-use bevy::prelude::*;
+use bevy::{
+    camera::RenderTarget, image::Image, prelude::*, render::render_resource::TextureFormat,
+};
 
-use crate::model::ModelBounds;
+use crate::{
+    cli::{CliOptions, RenderSize},
+    model::ModelBounds,
+};
 
 /// Extra space around the model's bounding sphere when framing it.
 const FRAME_MARGIN: f32 = 1.1;
@@ -29,6 +34,10 @@ impl Plugin for CameraPlugin {
             );
     }
 }
+
+/// Offscreen image used by the one-shot render path.
+#[derive(Resource)]
+pub struct CaptureTarget(pub Handle<Image>);
 
 /// How much the view is magnified: at 1 the model just fits the window, at 2
 /// it appears twice as large, and so on.
@@ -56,15 +65,42 @@ impl Default for Zoom {
     }
 }
 
-fn spawn_camera(mut commands: Commands) {
-    commands.spawn((
-        Camera3d::default(),
-        Projection::Perspective(PerspectiveProjection {
-            fov: FOV,
-            ..default()
-        }),
-        Transform::from_xyz(0.0, 0.0, 5.0),
-    ));
+fn spawn_camera(
+    mut commands: Commands,
+    mut images: Option<ResMut<Assets<Image>>>,
+    options: Option<Res<CliOptions>>,
+) {
+    let projection = Projection::Perspective(PerspectiveProjection {
+        fov: FOV,
+        ..default()
+    });
+    let transform = Transform::from_xyz(0.0, 0.0, 5.0);
+
+    if let Some(options) = options.filter(|options| options.output.is_some()) {
+        let Some(images) = images.as_mut() else {
+            error!("offscreen rendering requires Bevy's image assets");
+            return;
+        };
+        let target = images.add(Image::new_target_texture(
+            options.size.width,
+            options.size.height,
+            TextureFormat::Rgba8UnormSrgb,
+            None,
+        ));
+        commands.insert_resource(CaptureTarget(target.clone()));
+        commands.spawn((
+            Camera3d::default(),
+            Camera {
+                clear_color: ClearColorConfig::Custom(Color::srgba(0.15, 0.15, 0.18, 0.0)),
+                ..default()
+            },
+            RenderTarget::Image(target.into()),
+            projection,
+            transform,
+        ));
+    } else {
+        commands.spawn((Camera3d::default(), projection, transform));
+    }
 }
 
 /// Moves the camera along +Z, looking at the pivot, until the model fits the
@@ -72,8 +108,11 @@ fn spawn_camera(mut commands: Commands) {
 pub fn frame_model(
     bounds: Res<ModelBounds>,
     mut transform: Single<&mut Transform, With<Camera3d>>,
+    options: Option<Res<CliOptions>>,
 ) {
-    let distance = fit_distance(bounds.radius, FOV);
+    let size = options.map_or_else(RenderSize::default, |options| options.size);
+    let aspect = size.width as f32 / size.height as f32;
+    let distance = fit_distance(bounds.radius, FOV, aspect);
     **transform = Transform::from_xyz(0.0, 0.0, distance).looking_at(Vec3::ZERO, Vec3::Y);
 }
 
@@ -87,8 +126,10 @@ pub fn apply_zoom(zoom: Res<Zoom>, mut projection: Single<&mut Projection, With<
 
 /// Distance at which a sphere of `radius` fills a perspective view with
 /// vertical field of view `fov` (radians), plus [`FRAME_MARGIN`].
-fn fit_distance(radius: f32, fov: f32) -> f32 {
-    radius / (fov / 2.0).sin() * FRAME_MARGIN
+fn fit_distance(radius: f32, fov: f32, aspect: f32) -> f32 {
+    let horizontal_fov = 2.0 * ((fov / 2.0).tan() * aspect).atan();
+    let limiting_fov = fov.min(horizontal_fov);
+    radius / (limiting_fov / 2.0).sin() * FRAME_MARGIN
 }
 
 /// Field of view (radians) in which everything appears `magnification` times
@@ -105,14 +146,25 @@ mod tests {
     #[test]
     fn sphere_fits_view() {
         // With a 90° FOV, a unit sphere just touches the frustum at sqrt(2).
-        let distance = fit_distance(1.0, std::f32::consts::FRAC_PI_2);
+        let distance = fit_distance(1.0, std::f32::consts::FRAC_PI_2, 16.0 / 9.0);
         assert!((distance - 2f32.sqrt() * FRAME_MARGIN).abs() < 1e-5);
     }
 
     #[test]
     fn scales_with_radius() {
         let fov = 0.8;
-        assert!((fit_distance(10.0, fov) - 10.0 * fit_distance(1.0, fov)).abs() < 1e-4);
+        assert!(
+            (fit_distance(10.0, fov, 16.0 / 9.0) - 10.0 * fit_distance(1.0, fov, 16.0 / 9.0)).abs()
+                < 1e-4
+        );
+    }
+
+    #[test]
+    fn portrait_aspect_fits_the_horizontal_view() {
+        let fov = 0.8;
+        let distance = fit_distance(1.0, fov, 0.5);
+        let horizontal_fov = 2.0 * ((fov / 2.0).tan() * 0.5).atan();
+        assert!((distance - (1.0 / (horizontal_fov / 2.0).sin() * FRAME_MARGIN)).abs() < 1e-5);
     }
 
     #[test]

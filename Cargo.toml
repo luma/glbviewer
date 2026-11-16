@@ -11,6 +11,7 @@ base64 = "0.23"
 # Only the 3D stack: no audio, UI or 2D. `jpeg` is not on by default but is
 # needed for the many glTF files with JPEG textures.
 bevy = { version = "0.20", default-features = false, features = ["3d", "jpeg", "webp", "basis-universal"] }
+image = { version = "0.25.10", default-features = false, features = ["png"] }
 percent-encoding = "2"
 serde_json = "1.0.154"
 
